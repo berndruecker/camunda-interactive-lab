@@ -1,12 +1,13 @@
 package com.camunda.demo.lab.interactive;
 
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareAssertions.assertThat;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.execute;
+import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.job;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
-
-import static org.camunda.bpm.engine.test.assertions.bpmn.BpmnAwareTests.*;
-import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.*;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
@@ -17,25 +18,16 @@ import org.camunda.bpm.engine.variable.Variables;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
-import static org.camunda.bpm.engine.test.assertions.ProcessEngineTests.*;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.*;
-
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = WebEnvironment.NONE, //
-    // classes = TestApplication.class, //
     properties = { //
         "camunda.bpm.job-execution.enabled=false", //
         "camunda.bpm.auto-deployment-enabled=false" })
@@ -52,10 +44,7 @@ public class InteractiveLabTest {
   @Before
   public void setup() throws Exception {
     mockRestServer = MockRestServiceServer.createServer(restTemplate);
-  }
-  
-  // @Rule
-  // public ProcessEngineRule rule = new ProcessEngineRule();
+  }  
 
   @Test
   @Deployment(resources = { "interactive-lab.bpmn" })
@@ -73,7 +62,8 @@ public class InteractiveLabTest {
     VariableMap variables = Variables //
         .putValue("host", "localhost:8080") //
         .putValue("event", "test") // 
-        .putValue("name", "bernd");
+        .putValue("name", "bernd") //
+        .putValue("message", "Message_IHaveDoneIt_Test");
 
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Interactive-lab-participant", variables);
 

@@ -13,10 +13,10 @@ import org.springframework.context.annotation.ComponentScan;
 @EnableAutoConfiguration
 @EnableProcessApplication
 @ComponentScan
-public class Application {
+public class InteractiveLabApplication {
 
   public static void main(String... args) {
-    SpringApplication.run(Application.class, args);   
+    SpringApplication.run(InteractiveLabApplication.class, args);   
 
     // do default setup of platform (everything is only applied if not yet there)
     ProcessEngine engine = BpmPlatform.getDefaultProcessEngine();

@@ -50,143 +50,183 @@
   -->
 </head>
 <body>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-4">
+      Name of event: <input type="text" id="event"></input>
+      <br>
+      Name of group: <input type="text" id="group"></input>
+      <br>
+      Message to send: <input type="text" id="message" value="Message_IHaveDoneIt_Test"></input>
+      <br>
+      Target host: <input type="text" id="host" value="localhost:8080"></input>
+      <br>
+      Your name: <input type="text" id="yourName"></input>
+      <button onclick="startParticipantFlow()">start participant flow</button>
+      <br>
+      Number of people: <input type="text" id="numberOfPeople"></input>
+      <button onclick="startCollectionFlow()">start collector flow</button>
+
+    </div>
+
+    <div class="col-md-8">
       <!-- to draw on -->
-      <div class="content" id="js-drop-zone">
-        <div id="diagramCanvas"></div>
-      </div>
+      <div class="content" id="js-drop-zone">        
+      </div> 
+      <div class="content" id="js-drop-zone-0"></div> 
+      <div class="content" id="js-drop-zone-1"></div> 
+      <div class="content" id="js-drop-zone-2"></div> 
+      <div class="content" id="js-drop-zone-3"></div> 
+      <div class="content" id="js-drop-zone-4"></div> 
+    </div>
+   
+  </div>
+</div>
+<script>
 
-      <table id="statisticsTable" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th colspan="2"> Statistics</td>
-                        </tr>
-                    </thead>
-                    <tr>
-                        <td>Milestone</td>
-                        <td id="statisticsActivityId"></td>
-                    </tr>
-                    <tr>
-                        <td>Duration Average</td>
-                        <td id="statisticsAvg"></td>
-                    </tr>
-                    <tr>
-                        <td>Duration Minimum</td>
-                        <td id="statisticsMin"></td>
-                    </tr>
-                    <tr>
-                        <td>Duration Maximum</td>
-                        <td id="statisticsMax"></td>
-                    </tr>
-                    <tr>
-                        <td>Standard deviation</td>
-                        <td id="statisticsStdDev"></td>
-                    </tr>
-                    <tr>
-                        <td>Count</td>
-                        <td id="statisticsCount"></td>
-                    </tr>                    
-                </table>      
+  function startCollectionFlow() {
+      $.ajax(
+        restAccess + '/process-definition/key/interactive-lab-collector/start',
+        {
+             data: JSON.stringify({
+                "variables": {
+                  "event" : {"value" : $('#event').val(), "type": "String"},
+                  "group" : {"value" : $('#group').val(), "type": "String"},
+                  "numberOfPeople" : {"value" : $('#numberOfPeople').val(), "type": "Integer"}
+                },
+                businessKey:  $('#event').val() + "_" +  $('#group').val()
+             }),
+             contentType : 'application/json',
+             type : 'POST',
+             success: function (pi) {
+                console.log(pi);
+                loadModels();
+             }
+        });
+  };
 
-      <script>
+  function startParticipantFlow() {
+      $.ajax(
+        restAccess + '/process-definition/key/interactive-lab-participant/start',
+        {
+             data: JSON.stringify({
+                "variables": {
+                  "event" : {"value" : $('#event').val(), "type": "String"},
+                  "group" : {"value" : $('#group').val(), "type": "String"},
+                  "name" : {"value" : $('#yourName').val(), "type": "String"},
+                  "message" : {"value" : $('#message').val(), "type": "String"},
+                  "host" : {"value" : $('#host').val(), "type": "String"},
+                },
+                businessKey:  $('#event').val() + "_" +  $('#group').val() + "_" +  $('#yourName').val()
+             }),
+             contentType : 'application/json',
+             type : 'POST',
+             success: function (pi) {
+                console.log(pi);
+                loadData();                
+             }
+        });
+  };
+
+  var BpmnViewer = window.BpmnJS;  
+  var restAccess = "/rest/engine/default";  
+  var processViewers = {};
+
   $(document).ready(function() {
-    var BpmnViewer = window.BpmnJS;
-    var viewer = new BpmnViewer({container: '#diagramCanvas', width: '100%', height: '500px'});
-    var container = $('#js-drop-zone');
-        
     function getParameterByName(name) {
       var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
       return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
     }
-    var bpmnFile = getParameterByName("bpmnFile");
-    if (!bpmnFile) {
-      bpmnFile = '/models/status.bpmn';
-    }
-
-    $.get(bpmnFile, function(data) {
-
-          // show it in bpmn.io
-          viewer.importXML(data, function(err) {
-            if (err) {
-              console.log('error rendering', err);
-            } else {
-              var canvas = viewer.get('canvas');
-              var overlays = viewer.get('overlays');
-
-              container.removeClass('with-error')
-                   .addClass('with-diagram');
-
-              // zoom to fit full viewport
-              canvas.zoom('fit-viewport');
-                
-                // load runtime status
-              $.get("/statistics/bpmn/Underwriting", function(stats) {     
-                 addStats(overlays, stats);                
-              });
-            }
-          });
-      });     
+    loadModels();
+    setInterval(function(){
+      loadData();
+    }, 1000);
+    
   });
+
+  function loadModels() {
+    var container = $('#js-drop-zone');
+
+    $.get(restAccess + '/history/process-instance/', function(processInstances) {
+      for (var index = 0; index < processInstances.length; ++index) {
+          var pi = processInstances[index];
+          $.ajax({
+            type: "GET",
+            url: restAccess + '/process-definition/' + pi.processDefinitionId + '/xml',
+            processInstance: pi,
+            index: index,
+            success: function (data) {createViewer(data.bpmn20Xml, this.processInstance, this.index); }
+          });     
+      }
+    });    
+  }
+
+  function createViewer(xml, pi, index) {
+      var viewer = new BpmnViewer({container: '#js-drop-zone-' + index, width: '100%', height: '500px'});
+      processViewers[pi.id] = {
+        processInstance:  pi,
+        viewer: viewer,
+        overlays: viewer.get('overlays')
+      }
+
+      // show it in bpmn.io
+      viewer.importXML(xml, function(err) {
+        if (err) {
+          console.log('error rendering', err);
+        } else {
+          // zoom to fit full viewport
+          viewer.get('canvas').zoom('fit-viewport');
+          loadData();
+        }
+      });
+  }
+
+  function loadData() {
+    for (var processInstanceId in processViewers) {
+        // skip loop if the property is from prototype
+        if (!processViewers.hasOwnProperty(processInstanceId)) continue;
+
+        var pi = processViewers[processInstanceId].processInstance;
+        var viewer = processViewers[processInstanceId].viewer;
+
+        var overlays = processViewers[processInstanceId].overlays;
+        overlays.clear();
+          
+        $.get(restAccess + "/history/activity-instance/?processInstanceId=" + processInstanceId , function(instances) {
+           addActivityInstances(overlays, instances);                
+        });
+        $.get(restAccess +  "/incident/?processInstanceId=" + processInstanceId , function(incidents) {     
+           addIncidents(overlays, incidents);                
+        });
+    }
+  }
   
-  function addStats(overlays, stats) {
-    for (index = 0; index < stats.length; ++index) {
-        overlays.add(stats[index].targetMilestioneActivityId, {
+  
+  function addActivityInstances(overlays, activities) {
+    var sums = activities.reduce(function(sums,entry){
+       sums[entry.activityId] = (sums[entry.activityId] || 0) + 1;
+       return sums;
+    },{});
+    // TODO: add count
+    for (var activityId in sums) {
+        overlays.add(activityId, {
           position: {top: 0, right: 0},
           show: {minZoom: 0, maxZoom: 100.0}, 
-          html: '<div class="bpmn-badge">'+millisecondsToDiaplyString(stats[index].mean)+'</div>'
+          html: '<div class="bpmn-badge">'+(sums[activityId])+'</div>'
         });
-
-        // add click event to show statistics
-        $("[data-element-id='"+stats[index].targetMilestioneActivityId+"']")
-           .click({param1: stats[index]}, function(event) {
-              showActivityStatistics(event.data.param1);
-        });        
     }
   }
 
-   function hideActivityStatistics() {
-        $('#statisticsTable').hide();
-    };
-
-    function showActivityStatistics(actStats) {
-        if (actStats) {
-            $('#statisticsActivityId').text(actStats.targetMilestioneName + " (from " + actStats.sourceActivityName + ")");
-            $('#statisticsAvg').html(millisecondsToDiaplyString(actStats.mean));
-            $('#statisticsMin').html(millisecondsToDiaplyString(actStats.min));
-            $('#statisticsMax').html(millisecondsToDiaplyString(actStats.max));
-            $('#statisticsStdDev').html(millisecondsToDiaplyString(actStats.stdDev));
-            $('#statisticsCount').html(actStats.size);
-
-        } else {
-            $('#statisticsActivityId').text("")
-            $('#statisticsAvg').text("");
-            $('#statisticsMax').text("");
-            $('#statisticsStdDev').text("");
-            $('#statisticsCount').text("");
-        }
-
-        $('#statisticsTable').show();
+  function addIncidents(overlays, incidents) {
+    for (index = 0; index < incidents.length; ++index) {
+        overlays.add(incidents[index].activityId, {
+          position: {top: 0, right: 0},
+          show: {minZoom: 0, maxZoom: 100.0}, 
+          html: '<div class="bpmn-badge"> OH NO </div>'
+        });
     }
-
-  function millisecondsToDiaplyString(milli) {
-        var seconds = Math.floor((milli / 1000) % 60);
-        var minutes = Math.floor((milli / (60 * 1000)) % 60);
-        var hours = Math.floor((milli / (60 * 60 * 1000)) % 60);
-        var days = Math.floor((milli / (24 * 60 * 60 * 1000)) % 60);
-
-        var timeInfo = "This activity took " + days + " days " + minutes + " minutes " + hours + " hours and " + seconds + " seconds";
-
-        if (days>0) {
-            return '<span title="' + timeInfo + '">' + days + ' days</span>';
-        } else if (hours>0) {
-            return '<span title="' + timeInfo + '">' + hours + "hours " + minutes + ' minutes</span>';
-        } else if (minutes>0) {
-            return '<span title="' + timeInfo + '">' +  minutes + ' minutes</span>';
-        } else {
-            return '<span title="' + timeInfo + '">' +  seconds + ' seconds</span>';
-        }
-        return "";
-    }  
-      </script>
+  };
+</script>
       
   </body>
 </html>

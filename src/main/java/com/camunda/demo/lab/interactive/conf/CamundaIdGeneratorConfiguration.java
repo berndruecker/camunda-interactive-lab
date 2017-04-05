@@ -16,6 +16,6 @@ public class CamundaIdGeneratorConfiguration extends AbstractCamundaConfiguratio
 
   @Override
   public void preInit(SpringProcessEngineConfiguration configuration) {
-    configuration.setIdGenerator(new StrongUuidGenerator());
+//    configuration.setIdGenerator(new StrongUuidGenerator());
   }
 }

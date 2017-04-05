@@ -18,11 +18,12 @@ public class SendMessageAdapter implements JavaDelegate {
     String host = (String) ctx.getVariable("host");
     String name = (String) ctx.getVariable("name");
     String event = (String) ctx.getVariable("event");
+    String message = (String) ctx.getVariable("message");    
 
     SendMessageRequestDto request = new SendMessageRequestDto();
     request.getCorrelationKeys().put("event", new VariableDto().value(event));
     request.getProcessVariables().put("name", new VariableDto().value(name));
-    request.setMessageName("Message_IHaveDoneIt_Test");
+    request.setMessageName(message);
     rest.postForEntity(
         "http://" + host + "/rest/engine/default/message/",
         request, 
