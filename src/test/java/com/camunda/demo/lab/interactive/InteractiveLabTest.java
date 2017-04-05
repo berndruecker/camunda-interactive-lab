@@ -52,7 +52,7 @@ public class InteractiveLabTest {
     RuntimeService runtimeService = camunda.getRuntimeService();
         
     mockRestServer
-      .expect(requestTo("http://" + "localhost:8080" + "/rest/engine/default/message/")) //
+      .expect(requestTo("http://localhost:8080" + "/rest/engine/default/message/")) //
       .andExpect(method(HttpMethod.POST))
       .andExpect(jsonPath("$.messageName", is("Message_IHaveDoneIt_Test")))
       .andExpect(jsonPath("$.correlationKeys.event.value", is("test")))
@@ -61,7 +61,7 @@ public class InteractiveLabTest {
       .andRespond(withSuccess());
    
     VariableMap variables = Variables //
-        .putValue("host", "localhost:8080") //
+        .putValue("host", "http://localhost:8080") //
         .putValue("event", "test") // 
         .putValue("name", "bernd") //
         .putValue("group", "a") //

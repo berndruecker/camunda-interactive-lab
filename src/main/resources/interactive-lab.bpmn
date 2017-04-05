@@ -26,10 +26,13 @@
         <bpmn:incoming>SequenceFlow_0bjefhj</bpmn:incoming>
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="SequenceFlow_1e4cudx" sourceRef="StartEvent_0qi0ysa" targetRef="ServiceTask_1b2awgb" />
-      <bpmn:serviceTask id="ServiceTask_1b2awgb" name="Play tick sound" camunda:delegateExpression="#{playSoundAdapter}">
+      <bpmn:serviceTask id="ServiceTask_1b2awgb" name="Play tick sound" camunda:type="external" camunda:topic="playSound">
         <bpmn:extensionElements>
           <camunda:field name="sound">          <camunda:string>tick</camunda:string>
 </camunda:field>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sound">tick</camunda:inputParameter>
+          </camunda:inputOutput>
         </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_1e4cudx</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_0bjefhj</bpmn:outgoing>
@@ -43,10 +46,13 @@
       <bpmn:incoming>SequenceFlow_0rlu59d</bpmn:incoming>
       <bpmn:terminateEventDefinition />
     </bpmn:endEvent>
-    <bpmn:serviceTask id="ServiceTask_1y181yw" name="Play hooray sound" camunda:delegateExpression="#{playSoundAdapter}">
+    <bpmn:serviceTask id="ServiceTask_1y181yw" name="Play hooray sound" camunda:type="external" camunda:topic="playSound">
       <bpmn:extensionElements>
         <camunda:field name="sound">        <camunda:string>yeah</camunda:string>
 </camunda:field>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="sound">yeah</camunda:inputParameter>
+        </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1mi4lf1</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0rlu59d</bpmn:outgoing>
@@ -85,20 +91,26 @@
         <bpmn:incoming>SequenceFlow_1nbph7h</bpmn:incoming>
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="SequenceFlow_1nbph7h" sourceRef="Task_1fntpqi" targetRef="EndEvent_0hbboy5" />
-      <bpmn:serviceTask id="Task_1fntpqi" name="Play test sound" camunda:delegateExpression="#{playSoundAdapter}">
+      <bpmn:serviceTask id="Task_1fntpqi" name="Play test sound" camunda:type="external" camunda:topic="playSound">
         <bpmn:extensionElements>
           <camunda:field name="sound">          <camunda:string>test</camunda:string>
 </camunda:field>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sound">test</camunda:inputParameter>
+          </camunda:inputOutput>
         </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_0r59y90</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_1nbph7h</bpmn:outgoing>
       </bpmn:serviceTask>
     </bpmn:subProcess>
     <bpmn:subProcess id="SubProcess_18gidkh" triggeredByEvent="true">
-      <bpmn:serviceTask id="Task_1kvi092" name="Play bad sound" camunda:delegateExpression="#{playSoundAdapter}">
+      <bpmn:serviceTask id="Task_1kvi092" name="Play bad sound" camunda:type="external" camunda:topic="playSound">
         <bpmn:extensionElements>
           <camunda:field name="sound">          <camunda:string>ohoh</camunda:string>
 </camunda:field>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="sound">ohoh</camunda:inputParameter>
+          </camunda:inputOutput>
         </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_0rpvm55</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_0c2rk76</bpmn:outgoing>
