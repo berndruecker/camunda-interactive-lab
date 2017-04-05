@@ -11,7 +11,7 @@
       <bpmn:outgoing>SequenceFlow_1dfmvit</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1mi4lf1" name="yes" sourceRef="ExclusiveGateway_1fcykhv" targetRef="ServiceTask_1y181yw">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{true}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[#{receivedCount >= numberOfPeople }]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_0pahnb6" sourceRef="Task_1yzwkge" targetRef="Task_0y7g4ro" />
     <bpmn:sequenceFlow id="SequenceFlow_0rlu59d" sourceRef="ServiceTask_1y181yw" targetRef="EndEvent_0h9ky5i" />
@@ -37,7 +37,7 @@
       <bpmn:sequenceFlow id="SequenceFlow_0bjefhj" sourceRef="ServiceTask_1b2awgb" targetRef="EndEvent_1n5oqti" />
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="SequenceFlow_0b28dle" name="no" sourceRef="ExclusiveGateway_1fcykhv" targetRef="Task_1yzwkge">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{false}</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[#{receivedCount < numberOfPeople }]]></bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="EndEvent_0h9ky5i">
       <bpmn:incoming>SequenceFlow_0rlu59d</bpmn:incoming>
@@ -58,6 +58,15 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_07d7y7e" sourceRef="Task_0y7g4ro" targetRef="ExclusiveGateway_1fcykhv" />
     <bpmn:receiveTask id="Task_1yzwkge" name="Wait for participant to send message" messageRef="Message_1ujuzhy">
+      <bpmn:extensionElements>
+        <camunda:executionListener event="end">
+          <camunda:script scriptFormat="javascript"><![CDATA[if (!execution.hasVariable('receivedCount')) {
+  execution.setVariable('receivedCount', 1);
+} else {
+  execution.setVariable('receivedCount', receivedCount + 1);
+}]]></camunda:script>
+        </camunda:executionListener>
+      </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1dfmvit</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_0b28dle</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0pahnb6</bpmn:outgoing>
@@ -76,9 +85,9 @@
         <bpmn:incoming>SequenceFlow_1nbph7h</bpmn:incoming>
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="SequenceFlow_1nbph7h" sourceRef="Task_1fntpqi" targetRef="EndEvent_0hbboy5" />
-      <bpmn:serviceTask id="Task_1fntpqi" name="Play some sound" camunda:delegateExpression="#{playSoundAdapter}">
+      <bpmn:serviceTask id="Task_1fntpqi" name="Play test sound" camunda:delegateExpression="#{playSoundAdapter}">
         <bpmn:extensionElements>
-          <camunda:field name="sound">          <camunda:string>tick</camunda:string>
+          <camunda:field name="sound">          <camunda:string>test</camunda:string>
 </camunda:field>
         </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_0r59y90</bpmn:incoming>
@@ -102,7 +111,15 @@
       <bpmn:endEvent id="EndEvent_1hugfyx">
         <bpmn:incoming>SequenceFlow_01nctqy</bpmn:incoming>
       </bpmn:endEvent>
-      <bpmn:userTask id="Task_1viehod" name="Decide what to do next">
+      <bpmn:userTask id="Task_1viehod" name="Decide what to do next" camunda:candidateGroups="collector">
+        <bpmn:documentation>Decide about group #{group}</bpmn:documentation>
+        <bpmn:extensionElements>
+          <camunda:formData>
+            <camunda:formField id="receivedCount " label="Received messages" type="long" />
+            <camunda:formField id="numberOfPeople" label="Number of people" type="long" />
+            <camunda:formField id="tryAgain" label="Give it another chance?" type="boolean" />
+          </camunda:formData>
+        </bpmn:extensionElements>
         <bpmn:incoming>SequenceFlow_0c2rk76</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_1ejh7vj</bpmn:outgoing>
       </bpmn:userTask>
@@ -114,15 +131,15 @@
       <bpmn:sequenceFlow id="SequenceFlow_0c2rk76" sourceRef="Task_1kvi092" targetRef="Task_1viehod" />
       <bpmn:sequenceFlow id="SequenceFlow_1ejh7vj" sourceRef="Task_1viehod" targetRef="ExclusiveGateway_0ztlecq" />
       <bpmn:sequenceFlow id="SequenceFlow_02xh4kc" sourceRef="ExclusiveGateway_0ztlecq" targetRef="EndEvent_0zdk9ug">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{true}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{not tryAgain}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:sequenceFlow id="SequenceFlow_01nctqy" sourceRef="ExclusiveGateway_0ztlecq" targetRef="EndEvent_1hugfyx">
-        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{false}</bpmn:conditionExpression>
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{tryAgain}</bpmn:conditionExpression>
       </bpmn:sequenceFlow>
       <bpmn:startEvent id="StartEvent_1g6y71u" name="20 minutes" isInterrupting="false">
         <bpmn:outgoing>SequenceFlow_0rpvm55</bpmn:outgoing>
         <bpmn:timerEventDefinition>
-          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT10M</bpmn:timeDuration>
         </bpmn:timerEventDefinition>
       </bpmn:startEvent>
     </bpmn:subProcess>

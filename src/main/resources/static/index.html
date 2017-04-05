@@ -63,12 +63,16 @@
       <br>
       Your name: <input type="text" id="yourName"></input>
       <button onclick="startParticipantFlow()">start participant flow</button>
-      <br>
+    </div>
+    <div class="col-md-4">
       Number of people: <input type="text" id="numberOfPeople"></input>
       <button onclick="startCollectionFlow()">start collector flow</button>
-
     </div>
-
+    <div class="col-md-4">
+      <table id="humanTaskTable"><tbody><tr><td>TASKS</td></tr></tbody></table>
+    </div>
+  </div>
+  <div class="row">
     <div class="col-md-8">
       <!-- to draw on -->
       <div class="content" id="js-drop-zone">        
@@ -83,6 +87,16 @@
   </div>
 </div>
 <script>
+  var BpmnViewer = window.BpmnJS;  
+  var restAccess = "/rest/engine/default";  
+  var processViewers = {};
+
+  $(document).ready(function() {
+    loadModels();
+    setInterval(function(){
+      loadData();
+    }, 1000);    
+  });
 
   function startCollectionFlow() {
       $.ajax(
@@ -128,21 +142,37 @@
         });
   };
 
-  var BpmnViewer = window.BpmnJS;  
-  var restAccess = "/rest/engine/default";  
-  var processViewers = {};
+  function loadUserTasks() {    
+    $("#humanTaskTable > tbody").html("");
+    $.get(restAccess + '/task/?candidateGroup=collector', function(tasks) {
+      for (var index = tasks.length-1; index >= 0; --index) {
+          var task = tasks[index];
+          $('#humanTaskTable tbody').append(
+            "<tr><td>' + task.description </td>" + 
+            "<td><a onclick='completeTask(\""+task.id+"\", true)'>Give them another chance</a></td>" +
+            "<td><a onclick='completeTask(\""+task.id+"\", false)'>No way, its over</a></td>" +
+            "</tr>");
+      } 
+    });    
+  }
 
-  $(document).ready(function() {
-    function getParameterByName(name) {
-      var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
-      return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
-    }
-    loadModels();
-    setInterval(function(){
-      loadData();
-    }, 1000);
-    
-  });
+  function completeTask(taskId, tryAgain) {
+    $.ajax(
+        restAccess + '/task/' + taskId + '/complete/',
+        {
+             data: JSON.stringify({
+                "variables": {
+                  "tryAgain" : {"value" :tryAgain, "type": "Boolean"}
+                }
+             }),
+             contentType : 'application/json',
+             type : 'POST',
+             success: function (task) {
+                console.log(task);
+                loadData();                
+        }
+    });
+  }  
 
   function loadModels() {
     var container = $('#js-drop-zone');
