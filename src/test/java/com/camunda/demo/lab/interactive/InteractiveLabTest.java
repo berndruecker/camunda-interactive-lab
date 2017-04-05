@@ -47,7 +47,7 @@ public class InteractiveLabTest {
   }  
 
   @Test
-  @Deployment(resources = { "interactive-lab.bpmn" })
+  @Deployment(resources = {"interactive-lab-solution.bpmn" })
   public void testTick() {
     RuntimeService runtimeService = camunda.getRuntimeService();
         
@@ -56,6 +56,7 @@ public class InteractiveLabTest {
       .andExpect(method(HttpMethod.POST))
       .andExpect(jsonPath("$.messageName", is("Message_IHaveDoneIt_Test")))
       .andExpect(jsonPath("$.correlationKeys.event.value", is("test")))
+      .andExpect(jsonPath("$.correlationKeys.group.value", is("a")))
       .andExpect(jsonPath("$.processVariables.name.value", is("bernd")))
       .andRespond(withSuccess());
    
@@ -63,9 +64,10 @@ public class InteractiveLabTest {
         .putValue("host", "localhost:8080") //
         .putValue("event", "test") // 
         .putValue("name", "bernd") //
+        .putValue("group", "a") //
         .putValue("message", "Message_IHaveDoneIt_Test");
 
-    ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Interactive-lab-participant", variables);
+    ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("interactive-lab-participant", variables);
 
     assertThat(processInstance).job(); // safe point for retry behavior
     execute(job());

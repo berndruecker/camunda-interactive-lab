@@ -57,7 +57,7 @@
       <bpmn:outgoing>SequenceFlow_0b28dle</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_07d7y7e" sourceRef="Task_0y7g4ro" targetRef="ExclusiveGateway_1fcykhv" />
-    <bpmn:receiveTask id="Task_1yzwkge" name="Wait for participant to send message" messageRef="Message_1ujuzhy">
+    <bpmn:receiveTask id="Task_1yzwkge" name="Wait for next participants message" messageRef="Message_1ujuzhy">
       <bpmn:extensionElements>
         <camunda:executionListener event="end">
           <camunda:script scriptFormat="javascript"><![CDATA[if (!execution.hasVariable('receivedCount')) {
@@ -144,14 +144,14 @@
       </bpmn:startEvent>
     </bpmn:subProcess>
   </bpmn:process>
-  <bpmn:process id="interactive-lab-participant" isExecutable="true">
+  <bpmn:process id="interactive-lab-participant" isExecutable="false">
     <bpmn:startEvent id="StartEvent_0nrzddr">
       <bpmn:outgoing>SequenceFlow_06esand</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_0ju42t7">
       <bpmn:incoming>SequenceFlow_0psg33q</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:serviceTask id="Task_0gxc5l1" name="Call XXX" camunda:asyncBefore="true" camunda:delegateExpression="#{sendMessageAdapter}">
+    <bpmn:serviceTask id="Task_0gxc5l1" name="Send message to collector" camunda:asyncBefore="true" camunda:delegateExpression="#{sendMessageAdapter}">
       <bpmn:incoming>SequenceFlow_06esand</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0psg33q</bpmn:outgoing>
     </bpmn:serviceTask>

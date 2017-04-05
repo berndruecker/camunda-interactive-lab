@@ -50,16 +50,17 @@
       <br>
       Name of group: <input type="text" id="group"></input>
       <br>
-      Message to send: <input type="text" id="message" value="Message_IHaveDoneIt_Test"></input>
-      <br>
-      Target host: <input type="text" id="host" value="localhost:8080"></input>
-      <br>
-      Your name: <input type="text" id="yourName"></input>
-      <button onclick="startParticipantFlow()">start participant flow</button>
-    </div>  
+      Number of people: <input type="text" id="numberOfPeople"></input>
+      <button onclick="startCollectionFlow()">start collector flow</button>
+    </div>
+    <div class="col-md-4">
+      <table id="humanTaskTable"></table>
+    </div>
+  </div>
+  <div class="row">
     <div class="col-md-8">
       <div class="content" id="js-drop-zone">        
-      </div> 
+      </div>
     </div>
    
   </div>
@@ -67,15 +68,34 @@
 <script>
   var BpmnViewer = window.BpmnJS;  
   var restAccess = "/rest/engine/default";  
-  var processViewer;
-  var processInstanceId;
+  var processViewers = {};
 
   $(document).ready(function() {
-    loadModel();
     setInterval(function(){
       loadData();
     }, 1000);    
   });
+
+  function startCollectionFlow() {
+      $.ajax(
+        restAccess + '/process-definition/key/interactive-lab-collector/start',
+        {
+             data: JSON.stringify({
+                "variables": {
+                  "event" : {"value" : $('#event').val(), "type": "String"},
+                  "group" : {"value" : $('#group').val(), "type": "String"},
+                  "numberOfPeople" : {"value" : $('#numberOfPeople').val(), "type": "Integer"}
+                },
+                businessKey:  $('#event').val() + "_" +  $('#group').val()
+             }),
+             contentType : 'application/json',
+             type : 'POST',
+             success: function (pi) {
+                console.log(pi);
+                loadModel(pi);
+             }
+        });
+  };
 
   function startParticipantFlow() {
       $.ajax(
@@ -95,34 +115,81 @@
              type : 'POST',
              success: function (pi) {
                 console.log(pi);
-                processInstanceId = pi.id;           
+                loadData();                
              }
         });
   };
 
-  function loadModel() {
-          $.ajax({
-            type: "GET",
-            url: restAccess + '/process-definition/key/interactive-lab-participant/xml',
-            success: function (data) {createViewer(data.bpmn20Xml); }
-          });     
+  function loadUserTasks() {    
+    $("#humanTaskTable > tbody").html("");
+    $.get(restAccess + '/task/?candidateGroup=collector', function(tasks) {
+      for (var index = tasks.length-1; index >= 0; --index) {
+          var task = tasks[index];
+          $('#humanTaskTable tbody').append(
+            "<tr><td>' + task.description </td>" + 
+            "<td><a onclick='completeTask(\""+task.id+"\", true)'>Give them another chance</a></td>" +
+            "<td><a onclick='completeTask(\""+task.id+"\", false)'>No way, its over</a></td>" +
+            "</tr>");
+      } 
+    });    
   }
 
-  function createViewer(xml) {
-      processViewer = new BpmnViewer({container: '#js-drop-zone', width: '100%', height: '500px'});
-      processViewer.importXML(xml, function(err) {
+  function completeTask(taskId, tryAgain) {
+    $.ajax(
+        restAccess + '/task/' + taskId + '/complete/',
+        {
+             data: JSON.stringify({
+                "variables": {
+                  "tryAgain" : {"value" :tryAgain, "type": "Boolean"}
+                }
+             }),
+             contentType : 'application/json',
+             type : 'POST',
+             success: function (task) {
+                console.log(task);
+                loadData();                
+        }
+    });
+  }  
+
+  function loadModel(pi) {
+    $.ajax({
+      type: "GET",
+      url: restAccess + '/process-definition/' + pi.definitionId + '/xml',
+      processInstance: pi,
+      success: function (data) {createViewer(data.bpmn20Xml, this.processInstance); }
+    });       
+  }
+
+  function createViewer(xml, pi) {
+      var viewer = new BpmnViewer({container: '#js-drop-zone', width: '100%', height: '500px'});
+      processViewers[pi.id] = {
+        processInstance:  pi,
+        viewer: viewer,
+        overlays: viewer.get('overlays')
+      }
+
+      // show it in bpmn.io
+      viewer.importXML(xml, function(err) {
         if (err) {
           console.log('error rendering', err);
         } else {
           // zoom to fit full viewport
-          processViewer.get('canvas').zoom('fit-viewport');
+          viewer.get('canvas').zoom('fit-viewport');
+          loadData();
         }
       });
   }
 
   function loadData() {
-    if (processViewer) {
-        var overlays = processViewer.get('overlays');
+    for (var processInstanceId in processViewers) {
+        // skip loop if the property is from prototype
+        if (!processViewers.hasOwnProperty(processInstanceId)) continue;
+
+        var pi = processViewers[processInstanceId].processInstance;
+        var viewer = processViewers[processInstanceId].viewer;
+
+        var overlays = processViewers[processInstanceId].overlays;
         overlays.clear();
           
         $.get(restAccess + "/history/activity-instance/?processInstanceId=" + processInstanceId , function(instances) {
