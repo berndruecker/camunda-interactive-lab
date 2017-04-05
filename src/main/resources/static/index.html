@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+      
+  <!-- own CCS style for highlight of activity - color can be easily changed here -->
+  <style type="text/css">
+  .djs-container .highlight .djs-outline {
+     stroke-width: 2px important;
+     stroke: #08c !important;
+     fill: rgba(82,180,21,0.35) !important;
+  }
+  .djs-container .highlight .djs-visual>:nth-child(1) {
+     fill: rgba(82,180,21,0.35) !important;
+  }
+  .bpmn-badge {
+      display: inline-block;
+      min-width: 10px;
+      padding: 3px 7px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      line-height: 1;
+      vertical-align: baseline;
+      white-space: nowrap;
+      text-align: center;
+      background-color: #777;
+      border-radius: 10px;
+    
+    font-size: 12px;
+      border-width: 1px;
+      border-style: solid;
+      background-color: #52b415; // bpmn.io #610000 // camunda
+      border-color: #143d52;
+      color: #143d52;
+    } 
+  </style>
+
+  <link type="text/css" rel="stylesheet" href="webjars/bootstrap/css/bootstrap.css" />
+  
+  <!-- load jquery and bpmn-js dependencies -->
+  <script type="text/javascript" src="webjars/jquery/jquery.js"></script>
+ 
+  <!-- bpmn-js viewer -->
+  <script type="text/javascript" src="webjars/bpmn-js/dist/bpmn-navigated-viewer.js"></script>
+  <link type="text/css" rel="stylesheet" href="webjars/bpmn-js/dist/assets/diagram-js.css" />
+  <link type="text/css" rel="stylesheet" href="webjars/bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css" />
+  <!--
+  <link type="text/css" rel="stylesheet" href="resources/css/modeler.css" />
+  -->
+</head>
+<body>
+      <!-- to draw on -->
+      <div class="content" id="js-drop-zone">
+        <div id="diagramCanvas"></div>
+      </div>
+
+      <table id="statisticsTable" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th colspan="2"> Statistics</td>
+                        </tr>
+                    </thead>
+                    <tr>
+                        <td>Milestone</td>
+                        <td id="statisticsActivityId"></td>
+                    </tr>
+                    <tr>
+                        <td>Duration Average</td>
+                        <td id="statisticsAvg"></td>
+                    </tr>
+                    <tr>
+                        <td>Duration Minimum</td>
+                        <td id="statisticsMin"></td>
+                    </tr>
+                    <tr>
+                        <td>Duration Maximum</td>
+                        <td id="statisticsMax"></td>
+                    </tr>
+                    <tr>
+                        <td>Standard deviation</td>
+                        <td id="statisticsStdDev"></td>
+                    </tr>
+                    <tr>
+                        <td>Count</td>
+                        <td id="statisticsCount"></td>
+                    </tr>                    
+                </table>      
+
+      <script>
+  $(document).ready(function() {
+    var BpmnViewer = window.BpmnJS;
+    var viewer = new BpmnViewer({container: '#diagramCanvas', width: '100%', height: '500px'});
+    var container = $('#js-drop-zone');
+        
+    function getParameterByName(name) {
+      var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+      return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+    }
+    var bpmnFile = getParameterByName("bpmnFile");
+    if (!bpmnFile) {
+      bpmnFile = '/models/status.bpmn';
+    }
+
+    $.get(bpmnFile, function(data) {
+
+          // show it in bpmn.io
+          viewer.importXML(data, function(err) {
+            if (err) {
+              console.log('error rendering', err);
+            } else {
+              var canvas = viewer.get('canvas');
+              var overlays = viewer.get('overlays');
+
+              container.removeClass('with-error')
+                   .addClass('with-diagram');
+
+              // zoom to fit full viewport
+              canvas.zoom('fit-viewport');
+                
+                // load runtime status
+              $.get("/statistics/bpmn/Underwriting", function(stats) {     
+                 addStats(overlays, stats);                
+              });
+            }
+          });
+      });     
+  });
+  
+  function addStats(overlays, stats) {
+    for (index = 0; index < stats.length; ++index) {
+        overlays.add(stats[index].targetMilestioneActivityId, {
+          position: {top: 0, right: 0},
+          show: {minZoom: 0, maxZoom: 100.0}, 
+          html: '<div class="bpmn-badge">'+millisecondsToDiaplyString(stats[index].mean)+'</div>'
+        });
+
+        // add click event to show statistics
+        $("[data-element-id='"+stats[index].targetMilestioneActivityId+"']")
+           .click({param1: stats[index]}, function(event) {
+              showActivityStatistics(event.data.param1);
+        });        
+    }
+  }
+
+   function hideActivityStatistics() {
+        $('#statisticsTable').hide();
+    };
+
+    function showActivityStatistics(actStats) {
+        if (actStats) {
+            $('#statisticsActivityId').text(actStats.targetMilestioneName + " (from " + actStats.sourceActivityName + ")");
+            $('#statisticsAvg').html(millisecondsToDiaplyString(actStats.mean));
+            $('#statisticsMin').html(millisecondsToDiaplyString(actStats.min));
+            $('#statisticsMax').html(millisecondsToDiaplyString(actStats.max));
+            $('#statisticsStdDev').html(millisecondsToDiaplyString(actStats.stdDev));
+            $('#statisticsCount').html(actStats.size);
+
+        } else {
+            $('#statisticsActivityId').text("")
+            $('#statisticsAvg').text("");
+            $('#statisticsMax').text("");
+            $('#statisticsStdDev').text("");
+            $('#statisticsCount').text("");
+        }
+
+        $('#statisticsTable').show();
+    }
+
+  function millisecondsToDiaplyString(milli) {
+        var seconds = Math.floor((milli / 1000) % 60);
+        var minutes = Math.floor((milli / (60 * 1000)) % 60);
+        var hours = Math.floor((milli / (60 * 60 * 1000)) % 60);
+        var days = Math.floor((milli / (24 * 60 * 60 * 1000)) % 60);
+
+        var timeInfo = "This activity took " + days + " days " + minutes + " minutes " + hours + " hours and " + seconds + " seconds";
+
+        if (days>0) {
+            return '<span title="' + timeInfo + '">' + days + ' days</span>';
+        } else if (hours>0) {
+            return '<span title="' + timeInfo + '">' + hours + "hours " + minutes + ' minutes</span>';
+        } else if (minutes>0) {
+            return '<span title="' + timeInfo + '">' +  minutes + ' minutes</span>';
+        } else {
+            return '<span title="' + timeInfo + '">' +  seconds + ' seconds</span>';
+        }
+        return "";
+    }  
+      </script>
+      
+  </body>
+</html>

@@ -1,31 +1,13 @@
 package com.camunda.demo.lab.interactive;
 
 
-import static com.camunda.consulting.util.FilterGenerator.FILTER_alleAufgaben;
-import static com.camunda.consulting.util.UserGenerator.addFilterUserAuthorization;
-import static org.camunda.bpm.engine.authorization.Permissions.READ;
-import static org.camunda.bpm.engine.authorization.Resources.FILTER;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.camunda.bpm.BpmPlatform;
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.authorization.Authorization;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.variable.VariableMap;
-import org.camunda.bpm.engine.variable.Variables;
-import org.camunda.bpm.engine.variable.Variables.SerializationDataFormats;
 import org.camunda.bpm.spring.boot.starter.annotation.EnableProcessApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
-
-import com.camunda.consulting.util.FilterGenerator;
-import com.camunda.consulting.util.LicenseHelper;
-import com.camunda.consulting.util.UserGenerator;
 
 @SpringBootApplication
 @EnableAutoConfiguration
@@ -42,8 +24,8 @@ public class Application {
 //    engine.getRuntimeService().startProcessInstanceByKey("SendAmqpTest");
 
     // and add default users to Camunda to be ready-to-go
-    UserGenerator.createDefaultUsers(engine);
-    LicenseHelper.setLicense(engine);
+//    UserGenerator.createDefaultUsers(engine);
+//    LicenseHelper.setLicense(engine);
     
 //    // create default "all tasks" filter
 //    addFilterUserAuthorization(engine, "demo", FILTER_alleAufgaben);    
